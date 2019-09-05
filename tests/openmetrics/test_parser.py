@@ -53,6 +53,22 @@ a 1.2
 """)
         self.assertEqual([GaugeMetricFamily("a", "help", value=1.2)], list(families))
 
+    def test_leading_zeros_simple_gauge(self):
+        families = text_string_to_metric_families("""# TYPE a gauge
+# HELP a help
+a 0000000000000000000000000000000000000000001
+# EOF
+""")
+        self.assertEqual([GaugeMetricFamily("a", "help", value=1)], list(families))
+
+    def test_leading_zeros_float_gauge(self):
+        families = text_string_to_metric_families("""# TYPE a gauge
+# HELP a help
+a 0000000000000000000000000000000000000000001.2e-1
+# EOF
+""")
+        self.assertEqual([GaugeMetricFamily("a", "help", value=.12)], list(families))
+
     def test_nan_gauge(self):
         families = text_string_to_metric_families("""# TYPE a gauge
 # HELP a help
@@ -610,14 +626,25 @@ foo_created 1.520430000123e+09
             ('a  1\n# EOF\n'),
             ('a 1\t\n# EOF\n'),
             ('a 1 \n# EOF\n'),
+            ('a 1_2\n# EOF\n'),
+            ('a 0x1p-3\n# EOF\n'),
+            ('a 0x1P-3\n# EOF\n'),
+            ('a 0b1\n# EOF\n'),
+            ('a 0B1\n# EOF\n'),
+            ('a 0x1\n# EOF\n'),
+            ('a 0X1\n# EOF\n'),
+            ('a 0o1\n# EOF\n'),
+            ('a 0O1\n# EOF\n'),
             # Bad timestamp.
             ('a 1 z\n# EOF\n'),
             ('a 1 1z\n# EOF\n'),
+            ('a 1 1_2\n# EOF\n'),
             ('a 1 1.1.1\n# EOF\n'),
             ('a 1 NaN\n# EOF\n'),
             ('a 1 Inf\n# EOF\n'),
             ('a 1 +Inf\n# EOF\n'),
             ('a 1 -Inf\n# EOF\n'),
+            ('a 1 0x1p-3\n# EOF\n'),
             # Bad exemplars.
             ('# TYPE a histogram\na_bucket{le="+Inf"} 1 #\n# EOF\n'),
             ('# TYPE a histogram\na_bucket{le="+Inf"} 1# {} 1\n# EOF\n'),
@@ -627,6 +654,8 @@ foo_created 1.520430000123e+09
             ('# TYPE a histogram\na_bucket{le="+Inf"} 1 # {} 1 1 \n# EOF\n'),
             ('# TYPE a histogram\na_bucket{le="+Inf"} 1 # '
              '{a="2345678901234567890123456789012345678901234567890123456789012345"} 1 1\n# EOF\n'),
+            ('# TYPE a histogram\na_bucket{le="+Inf"} 1 # {} 0x1p-3\n# EOF\n'),
+            ('# TYPE a histogram\na_bucket{le="+Inf"} 1 # {} 1 0x1p-3\n# EOF\n'),
             # Exemplars on unallowed samples.
             ('# TYPE a histogram\na_sum 1 # {a="b"} 0.5\n# EOF\n'),
             ('# TYPE a gaugehistogram\na_sum 1 # {a="b"} 0.5\n# EOF\n'),
